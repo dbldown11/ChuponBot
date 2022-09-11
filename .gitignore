@@ -1,0 +1,11 @@
+*.env
+*.py[cod]
+*$py.class
+*.so
+
+__pycache__
+./commands/__pycache__
+./functions/__pycache__
+.idea/
+db/
+races/
