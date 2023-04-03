@@ -1,7 +1,0 @@
-{
-    "PERMISSIONS": 523365392,
-    "DEFAULT_BOT_CHANNEL": "bot_testing",
-    "DEFAULT_ADMIN_ROLE": "RaceBot Admin",
-    "DEFAULT_MAX_RACES": 5,
-    "DEFAULT_RACE_CATEGORY": "Races"
-}

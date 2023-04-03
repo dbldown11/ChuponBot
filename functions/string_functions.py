@@ -104,14 +104,14 @@ def parse_command(command: str, params: str) -> str:
 
     return commands_values
 
-def parse_roomname(name=None) -> str:
+def parse_roomname(name=None, prefix=None) -> str:
     """
     Parses the arguments for a named room, returning a name conforming to our rules. Use of this function
     assumes that the command has been run through our ``parse_command`` function. If no name is supplied, one
     will be created.
     Paramters
     ---------
-    name : str (optiona)
+    name : str (optional)
         The name of the room
     Returns
     -------
@@ -120,11 +120,15 @@ def parse_roomname(name=None) -> str:
     """
 
     # Generate a random name of length functions.constants.RANDOM_ROOM_NAME_LENGTH. Check them for profanity and reroll if it exists
+    if prefix is None:
+        room_prefix = 'ff6wc'
+    else:
+        room_prefix = prefix
     if name is None:
         counter = 0
-        room_name = '-'.join(["ff6wc", ''.join(random.choices(string.ascii_lowercase + string.digits, k=RANDOM_ROOM_NAME_LENGTH))]).strip()
+        room_name = '-'.join([room_prefix, ''.join(random.choices(string.ascii_lowercase + string.digits, k=RANDOM_ROOM_NAME_LENGTH))]).strip()
         while profanity.contains_profanity(room_name):
-            room_name = '-'.join(["ff6wc", ''.join(random.choices(string.ascii_lowercase + string.digits, k=RANDOM_ROOM_NAME_LENGTH))]).strip()
+            room_name = '-'.join([room_prefix, ''.join(random.choices(string.ascii_lowercase + string.digits, k=RANDOM_ROOM_NAME_LENGTH))]).strip()
             counter += 1
             if counter > 100:
                 emessage = "Attempted to create 100 random room names and they all contain profanity. Ending attempts."

@@ -1,5 +1,6 @@
 import discord
 from functions.isRace_room import isRace_room
+from functions.db_functions import db_update_racerunner
 
 async def unready(interaction, races) -> dict:
     """
@@ -41,4 +42,5 @@ async def unready(interaction, races) -> dict:
 
     msg += f"{unready} players are not ready."
 
+    await db_update_racerunner(race, interaction.user.id)
     await interaction.response.send_message(msg)

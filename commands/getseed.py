@@ -1,5 +1,6 @@
 import datetime
 import discord
+import os
 import random
 import string
 
@@ -10,24 +11,20 @@ from functions.string_functions import parse_roomname
 from functions.generate_seed import generate_seed
 from classes.Log import Log
 from classes.Race import Race
+from functions.update_raceroom_pin import update_raceroom_pin
+from functions.db_functions import db_update_racerunner
 import functions.constants
+from functions.constants import TZ
 
 
-async def getseed(guild, message, args, races) -> False:
+async def getseed(interaction, races) -> False:
     """
     Gets the guarded async seed for this channel and DMs it to the user
 
     Parameters
     ----------
-    guild : discord.guild.Guild
-        The server we're on
-
-    message : discord.message.Message
-        A discord message containing our command
-
-    args : dict
-        A dictionary containing the command we've been given
-        ex: {'join': {'room': ('myrace-sync',)}}
+    interaction : discord.Interaction
+        The Interaction that generated the openrace call
 
     races : dict
         A dictionary containing racerooms
@@ -37,84 +34,105 @@ async def getseed(guild, message, args, races) -> False:
     """
     logger = Log()
     emessage = ""
-    if not isinstance(guild, discord.guild.Guild):
-        emessage += f"guild is not a discord.guild.Guild - Found type {type(guild)}\n"
-    if not isinstance(message, discord.message.Message):
-        emessage += f"message is not a discord.message.Message - Found type {type(message)}\n"
-    if not isinstance(args, dict):
-        emessage += f"args is not a Python dict - Found type {type(args)}\n"
+    if not isinstance(interaction, discord.Interaction):
+        emessage += f"interaction is not a discord.Interaction - Found type {type(interaction)}\n"
     if emessage != "":
         raise Exception(emessage)
 
     # The channel the message is in. This is a discord channel object
-    channel = message.channel
+    channel = interaction.channel
     channel_name = str(channel)
+    guild = interaction.guild
 
+    '''
     try:
         assert '' in args['getseed'].keys()
     except:
         emessage += "There was an error in the getseed function. Contact WhoDat42 or wrjones18"
-        await channel.send(emessage)
+        await interaction.response.send_message(emessage, ephemeral=True)
         logger.show(emessage, functions.constants.LOG_CRITICAL)
         return None
+
 
     # Make sure the user isn't trying to pass anything to the command
     if len(args.keys()) != 1 or 'getseed' not in args.keys() or len(args['getseed']['']) != 0:
         emessage += "Do not pass any commands to the getseed command"
-        await channel.send(emessage)
+        await interaction.response.send_message(emessage, ephemeral=True)
         return None
+    '''
 
     # Check to see if this is a racing channel
     if channel_name not in races.keys():
         emessage = f"{channel_name} is not a race channel. Not sending seed."
-        await channel.send(emessage)
+        await interaction.response.send_message(emessage, ephemeral=True)
         return None
 
     race = races[channel_name]
     if race.isHidden and not race.race_start_date:
         smessage = "You are not allowed to request the seed until the race starts"
-        await channel.send(smessage)
+        await interaction.response.send_message(emessage, ephemeral=True)
         return
 
-    if message.author.name in race.members.keys():
-        if race.members[message.author.name].hasSeed:
-            emessage = f"@{message.author.name} You should already have the seed! If not please contact a race admin immediately"
-            await channel.send(emessage)
+    if interaction.user.name in race.members.keys():
+        if race.members[interaction.user.name].hasSeed:
+            emessage = f"@{interaction.user.name}, you should already have the seed! If not, please contact a race admin immediately."
+            await interaction.response.send_message(emessage, ephemeral=True)
             return
     else:
-        emessage = f"@{message.author.name} You aren't in this race"
-        await channel.send(emessage)
+        emessage = f"@{interaction.user.name}, you aren't in this race"
+        await interaction.response.send_message(emessage, ephemeral=True)
         return
 
-    if not race.url:
+    if not race.url and not race.filename:
         emessage = "The seed has not yet been set"
-        await channel.send(emessage)
+        await interaction.response.send_message(emessage, ephemeral=True)
         return
 
-    url = race.url
+    file = None
+    if race.url:
+        url = race.url
+    elif race.filename:
+        path = os.path.join(functions.constants.UPLOADS_PATH, channel_name)
+        file = discord.File(os.path.join(path, race.filename))
     version = race.version
     hash = race.hash
 
     for member_name in race.members.keys():
-        if race.members[member_name].member.id == message.author.id:
+        if race.members[member_name].member.id == interaction.user.id:
             race.members[member_name].hasSeed = True
 
     if race.isHidden:
-        race.members[message.author.name].start_date = datetime.datetime.now(functions.constants.TZ)
-        msg = f"User {message.author.name} delivered seed at {race.members[message.author.name].start_date}"
+        race.members[interaction.user.name].start_date = datetime.datetime.now(functions.constants.TZ)
+        msg = f"User {interaction.user.name} requested seed at {race.members[interaction.user.name].start_date}"
         logger.show(msg)
         race.comments += msg + "\n"
 
-    smessage = f"Here's your Worlds Collide version {version} seed for {race.channel.name}:\n"
-    smessage += f"URL: {url}\n"
-    smessage += f"Hash: {hash}\n"
+    if race.isHidden:
+        await interaction.response.send_message(f"Your seed has been sent! Your timer started approximately {discord.utils.format_dt(datetime.datetime.now(tz=TZ),style='R')}", ephemeral=True)
+    else:
+        await interaction.response.send_message(f"Your seed has been sent!")
+
+    if race.filename is None:
+        smessage = f"Here's your Worlds Collide version {version} seed for **{race.channel.name}**:\n"
+        smessage += f"URL: {url}\n"
+        smessage += f"Hash: {hash}\n"
+    else:
+        smessage = f"Here's your custom Worlds Collide seed for **{race.channel.name}**:\n"
+        smessage += f"Please note that this file was uploaded by {race.creator} and its contents have not been tested or verified. "
+        smessage += f"Only use downloaded files from trusted sources!"
     smessage += "\n"
-    author = interaction.user
+    if race.isHidden:
+        smessage += f"**Your timer has started!** "
+        smessage += f"Your official start time is: {discord.utils.format_dt(datetime.datetime.now(tz=TZ),style='T')}\n"
+        smessage += f'Good luck and have fun!'
+
     race.log(functions.constants.LOG_TRIVIAL)
-    await interaction.followup.send(smessage)
+    await update_raceroom_pin(race.channel_name, races)
+    await interaction.user.send(content=smessage,file=file)
+    await db_update_racerunner(race, interaction.user.id)
 
 
-async def getseed_hidden(user, race) -> str:
+async def getseed_hidden(user, race, races) -> str:
     """
     Sends the hidden seed to user. This function should only be called by startrace
 
@@ -128,6 +146,9 @@ async def getseed_hidden(user, race) -> str:
 
     race : Race
         An FF6WC-raceroom Race
+
+    races : dict
+        A dictionary containing racerooms
     Returns
     -------
     Race URL
@@ -142,14 +163,26 @@ async def getseed_hidden(user, race) -> str:
         raise Exception(emessage)
 
     url = race.url
+    file = None
+    if race.filename:
+        path = os.path.join(functions.constants.UPLOADS_PATH, channel_name)
+        file = discord.File(os.path.join(path, race.filename))
     version = race.version
     hash = race.hash
 
-    smessage = f"Here's your Worlds Collide version {version} seed:\n"
-    smessage += f"URL: {url}\n"
-    smessage += f"Hash: {hash}\n"
-    smessage += "\n"
+    smessage = f"{race.channel_name} has begun! Good luck and have fun!\n\n"
+    if race.filename is None:
+        smessage += f"Here's your Worlds Collide version {version} seed for **{race.channel.name}**:\n"
+        smessage += f"URL: {url}\n"
+        smessage += f"Hash: {hash}\n"
+        smessage += "\nGood luck and have fun!\n"
+    else:
+        smessage = f"Here's your custom Worlds Collide seed for **{race.channel.name}**.\n"
+        smessage += f"Please note that this file was uploaded by {race.creator} and its contents have not been tested or verified.\n"
+        smessage += f"Only use downloaded files from trusted sources!"
 
-    await user.send(smessage)
+    await db_update_racerunner(race, user.id)
+    await update_raceroom_pin(race.channel_name, races)
+    await user.send(content=smessage, file=file)
 
     return url

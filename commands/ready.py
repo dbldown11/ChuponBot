@@ -1,5 +1,8 @@
 import discord
 from functions.isRace_room import isRace_room
+from functions.update_raceroom_pin import update_raceroom_pin
+from functions.db_functions import db_update_racerunner
+from functions.update_spoiler_room_pin import update_spoiler_room_pin
 
 async def ready(interaction, races) -> dict:
     """
@@ -49,4 +52,6 @@ async def ready(interaction, races) -> dict:
     else:
         msg += "Everyone is ready! Use `/startrace` to start the race."
 
+    await db_update_racerunner(race, race.members[interaction.user.name].member.id)
+    await update_raceroom_pin(race.channel_name,races)
     await interaction.response.send_message(msg)

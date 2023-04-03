@@ -1,16 +1,15 @@
-import datetime
-from commands.finishrace import finishrace
-import discord
-import random
-import string
 import dateutil.parser
-from functions.constants import TZ, RACETYPE_ASYNC
-
-from better_profanity import profanity
+import datetime
+from datetime import datetime, timedelta
+import discord
 from discord.utils import get
-from functions.add_racerooms import add_racerooms
-from functions.string_functions import parse_roomname, parse_done_time, timedelta_to_str
+
+from commands.finishrace import finishrace
+from functions.constants import RACETYPE_ASYNC
 from functions.isRace_room import isRace_room
+from functions.update_raceroom_pin import update_raceroom_pin
+from functions.update_spoiler_room_pin import update_spoiler_room_pin
+from functions.db_functions import db_update_race, db_update_racerunner
 
 
 async def forfeit(interaction, races) -> dict:
@@ -29,7 +28,7 @@ async def forfeit(interaction, races) -> dict:
     -------
     Nothing
     """
-    emessage = ""
+
     guild = interaction.guild
 
     emessage = ""
@@ -46,29 +45,52 @@ async def forfeit(interaction, races) -> dict:
 
     if not isRace_room(channel, races):
         msg = "This is not a race room!"
-        await interaction.response.send_message(msg,ephemeral=True)
+        await interaction.response.send_message(msg, ephemeral=True)
         return
 
     # Is the user in this race?
     race = races[channel.name]
     if interaction.user.name not in race.members.keys():
         msg = f"User {interaction.user.name} is not in this race"
-        await interaction.response.send_message(msg,ephemeral=True)
+        await interaction.response.send_message(msg, ephemeral=True)
         return
 
-    if not race.members[interaction.user.name].start_date:
-        msg = f"User {interaction.user.name} has not started this race"
-        await interaction.response.send_message(msg,ephemeral=True)
+    if not race.race_start_date:
+        msg = f"{interaction.user.name}, the race hasn't been started yet, use `/quit` to leave instead."
+        await interaction.response.send_message(msg, ephemeral=True)
+        return
+
+    # Has the user started the race yet?
+    if not race.members[interaction.user.name].start_date and race.type == 'sync':
+        msg = f"{interaction.user.name}, the race hasn't been started yet, use `/quit` to leave instead."
+        await interaction.response.send_message(msg, ephemeral=True)
         return
 
     racer = race.members[interaction.user.name]
     racer.forfeit = True
-    racer.finish_date = dateutil.parser.parse('2099-12-31 23:59:59.999-05:00')
+    # racer.finish_date = dateutil.parser.parse('2099-12-31 23:59:59.999-05:00')
+    # give the racer a dummy start time so time_taken will have a value for results/elo purposes
+    if race.type == RACETYPE_ASYNC:
+        racer.start_date = race.race_start_date
+    racer.finish_date = datetime.now() + timedelta(days=180)
 
-    msg = f"User {interaction.user.name} has forfeit"
+    msg = f"User {interaction.user.name} has forfeited the race."
     await interaction.response.send_message(msg)
     race.comments += "\n" + msg
-    race.log()
+    # race.log()
+
+    done_msg = f":flag_white: {interaction.user.name} has forfeited the race. :flag_white: "
+    spoiler_channel = get(guild.channels, name=interaction.channel.name + "-spoilers")
+    await spoiler_channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
+    spoil_msg = await spoiler_channel.send(done_msg)
+
+    print(racer.time_taken)
+    print(type(racer.time_taken))
+
+    await db_update_race(race)
+    await db_update_racerunner(race, racer.member.id)
+    await update_raceroom_pin(race.channel_name, races)
+    await update_spoiler_room_pin(race.channel_name, races)
 
     # If it's an async, we don't need to automatically close the race
     if race.type == RACETYPE_ASYNC:

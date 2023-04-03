@@ -25,12 +25,14 @@ def get_seedinfo(url, seed_desc = None) -> dict:
     """
     logger = Log()
 
-    api_url = "https://ff6wc.com/api/seed/" + os.getenv("ff6wc_api_key") + "/" + url.split("/")[-1]
+    #api_url = "https://ff6wc.com/api/seed/" + os.getenv("ff6wc_api_key") + "/" + url.split("/")[-1]
+    api_url = "https://dev.ff6worldscollide.com/api/seed/" + "doubledown" + "/" + url.split("/")[-1]
 
     headers = {
         'Content-Type': 'application/json'
     }
-    response = requests.request("GET", api_url, headers=headers)
+    response = requests.request("POST", api_url, headers=headers)
+    print(response.content)
     data = response.json()
     if 'url' not in data:
         msg = f'API returned {data} for the following URL:\n{url}'

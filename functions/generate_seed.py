@@ -25,10 +25,12 @@ def generate_seed(flags, seed_desc = None) -> dict:
     """
     logger = Log()
 
-    url = "https://ff6wc.com/api/generate"
+    #url = "https://ff6wc.com/api/generate"
+    url = "https://dev.ff6worldscollide.com/api/seed"
     if seed_desc:
         payload = json.dumps({
-            "key": os.getenv("ff6wc_api_key"),
+            #"key": os.getenv("ff6wc_api_key"),
+            "key": 'doubledown',
             "flags": flags,
             "description": seed_desc
         })
@@ -37,13 +39,16 @@ def generate_seed(flags, seed_desc = None) -> dict:
         }
     else:
         payload = json.dumps({
-            "key": os.getenv("ff6wc_api_key"),
+            #"key": os.getenv("ff6wc_api_key"),
+            "key": 'doubledown',
             "flags": flags
         })
         headers = {
             'Content-Type': 'application/json'
         }
+    print(payload)
     response = requests.request("POST", url, headers=headers, data=payload)
+    print(response.content)
     data = response.json()
     if 'url' not in data:
         msg = f'API returned {data} for the following flagstring:\n{flags}'

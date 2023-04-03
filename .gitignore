@@ -9,3 +9,6 @@ __pycache__
 .idea/
 db/
 races/
+/data/testdata.db
+/data/testdata.db-shm
+/data/testdata.db-wal

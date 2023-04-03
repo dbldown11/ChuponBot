@@ -16,9 +16,9 @@ from functions.update_race_listing import update_race_listing
 from functions.db_functions import db_update_race, db_update_racerunner
 from classes.Log import Log
 
-async def startrace(interaction, races):
+async def event_start(interaction, races, event_name, event_prefix, event_desc):
     """
-    starts a race in a given guild (server) with the name stored in args
+    Starts an event in a given guild (server) with the provided info
 
     Parameters
     ----------
@@ -28,16 +28,38 @@ async def startrace(interaction, races):
     races : dict
         A dictionary containing racerooms
 
+    event_name : str
+        A string containing the event's name
+
+    event_prefix : str
+        A string containing the event's raceroom prefix
+
+    event_desc : str
+        A string containing the event's description
+
     Returns
     -------
     Nothing
     """
+    name = event_name
+    prefix = event_prefix
+    desc = event_desc
 
     emessage = ""
     if not isinstance(interaction, discord.Interaction):
         emessage += f"message is not a discord.Interaction - Found type {type(interaction)}\n"
     if emessage != "":
         raise Exception(emessage)
+
+    if profanity.contains_profanity(name):
+        await interaction.followup.send('You have attempted to create an event with an inappropriate name')
+        return
+    if profanity.contains_profanity(prefix):
+        await interaction.followup.send('You have attempted to create an event with an inappropriate prefix')
+        return
+    if profanity.contains_profanity(desc):
+        await interaction.followup.send('You have attempted to create an event with an inappropriate description')
+        return
 
     # The server the command was called from
     guild = interaction.guild

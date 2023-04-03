@@ -26,5 +26,9 @@ RACE_ROOM_CLOSE_TIME = 30
 RANDOM_ROOM_NAME_LENGTH = 6
 
 RACE_PATH = "./races"
+UPLOADS_PATH = "./uploads"
+PLAYERS_PATH = "./players"
+EVENTS_PATH = "./events"
+DATA_PATH = "./data"
 ADMIN_ROLE = "RaceBot Admin"
 ADMINS = (JONES, DOUBLEDOWN)

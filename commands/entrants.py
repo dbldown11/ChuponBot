@@ -44,4 +44,11 @@ async def entrants(interaction, races):
 
             msg += race.members[member].member.name + '--'+ status + '\n'
         msg += '`\n'
-    await interaction.response.send_message(msg)
+
+    embed = discord.Embed(
+    title=f'Current enrants: **{race.channel_name}**',
+    colour=discord.Colour.blue(),
+    description=msg)
+
+    await interaction.response.send_message(content=None, embed=embed, ephemeral=True)
+    #await interaction.response.send_message(msg)

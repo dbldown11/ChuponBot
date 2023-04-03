@@ -11,6 +11,9 @@ from discord.utils import get
 from functions.add_racerooms import add_racerooms
 from functions.string_functions import parse_roomname, parse_done_time, timedelta_to_str
 from functions.isRace_room import isRace_room
+from functions.update_raceroom_pin import update_raceroom_pin
+from functions.update_spoiler_room_pin import update_spoiler_room_pin
+from functions.db_functions import db_update_racerunner
 
 
 async def done(interaction, races, **kwargs) -> dict:
@@ -65,17 +68,22 @@ async def done(interaction, races, **kwargs) -> dict:
     # Is the user in this race?
     race = races[channel.name]
     if interaction.user.name not in race.members.keys():
-        msg = f"User {interaction.user.name} is not in this race"
+        msg = f"You have not joined this race."
         await interaction.response.send_message(msg,ephemeral=True)
         return
 
     if not race.members[interaction.user.name].start_date and not race.type == RACETYPE_ASYNC:
-        msg = f"User {interaction.user.name} has not started this race"
+        msg = f"You have not started this race yet."
+        await interaction.response.send_message(msg,ephemeral=True)
+        return
+
+    if not race.members[interaction.user.name].start_date and race.type == RACETYPE_ASYNC and race.isHidden == True:
+        msg = f"You have not retrieved their seed or started this race yet."
         await interaction.response.send_message(msg,ephemeral=True)
         return
 
     if race.members[interaction.user.name].finish_date:
-        msg = f"User {interaction.user.name} has already finished the race"
+        msg = f"You have already finished the race."
         await interaction.response.send_message(msg,ephemeral=True)
         return
 
@@ -86,7 +94,7 @@ async def done(interaction, races, **kwargs) -> dict:
     ## an async, we don't need to do any of this since we just care about when they typed !done
     dt = None
     done_str = None
-    if race.type == RACETYPE_ASYNC:
+    if race.type == RACETYPE_ASYNC and race.isHidden == False:
         if not isinstance(kwargs['time'], str) or len(kwargs['time']) < 1:
             await interaction.response.send_message(bad_time_message, ephemeral=True)
             return None
@@ -102,27 +110,32 @@ async def done(interaction, races, **kwargs) -> dict:
             return None
 
     race.members[interaction.user.name].forfeit = False
-    race.members[interaction.user.name].finish_date = datetime.datetime.now(TZ)
+    race.members[interaction.user.name].finish_date = datetime.datetime.now()
 
 
     # If this is a hidden seed or sync, the racers don't report their own time
-    if race.type == RACETYPE_ASYNC:
+    if race.type == RACETYPE_ASYNC and race.isHidden == False:
         race.members[interaction.user.name].start_date = race.members[interaction.user.name].finish_date - dt
 
     done_str = timedelta_to_str(race.members[interaction.user.name].time_taken)
     race.log(LOG_TRIVIAL)
 
     # Finally we should have a reasonable time
-    done_msg = f"{interaction.user.name} has finished the race with a time of {done_str}!"
+    done_msg = f":checkered_flag: {interaction.user.name} has finished the race with a time of {done_str}! :checkered_flag:"
     await interaction.response.send_message(f"You have finished the race with a time of {done_str}!", ephemeral=True)
     spoiler_channel = get(guild.channels, name=interaction.channel.name + "-spoilers")
     await spoiler_channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
     spoil_msg = await spoiler_channel.send(done_msg)
-    await spoil_msg.pin()
+    # await spoil_msg.pin() # No need to pin since there's a pinned embed now
 
+    await db_update_racerunner(race, interaction.user.id)
+    await update_raceroom_pin(race.channel_name,races)
+    await update_spoiler_room_pin(race.channel_name,races)
+    '''
     # Delete the message if it's a hidden race
     if race.isHidden:
         await message.delete()
+    '''
 
     # If it's an async, don't close the room when the last person is done
     if race.type == RACETYPE_ASYNC:

@@ -19,6 +19,13 @@ class RaceRunner:
         self._guild = None
         self._channel = None
         self._hasSeed = False
+        self._start_rating_thistype = None
+        self._start_rating_all = None
+        self._finish_rating_thistype = None
+        self._finish_rating_all = None
+        self._finish_pos = None
+        self._event_points = None
+        self._gp_earned = None
 
 
     @property
@@ -110,8 +117,8 @@ class RaceRunner:
     def time_taken(self) -> datetime.timedelta:
         if self._start_date is None:
             return None
-        if self._forfeit:
-            return None
+        #if self._forfeit:
+        #    return None
         if self._finish_date is None:
             return None
         taken = self.finish_date - self.start_date
@@ -156,6 +163,81 @@ class RaceRunner:
             raise Exception(emessage)
         self._hasSeed = input
 
+    @property
+    def start_rating_thistype(self) -> float:
+        return self._start_rating_thistype
+
+    @start_rating_thistype.setter
+    def start_rating_thistype(self, input:float) -> None:
+        if not isinstance(input,float):
+            emessage = f"input should be a float, found type {type(input)}"
+            raise Exception(emessage)
+        self._start_rating_thistype = input
+        
+    @property
+    def start_rating_all(self) -> float:
+        return self._start_rating_all
+
+    @start_rating_all.setter
+    def start_rating_all(self, input:float) -> None:
+        if not isinstance(input,float):
+            emessage = f"input should be a float, found type {type(input)}"
+            raise Exception(emessage)
+        self._start_rating_all = input
+
+    @property
+    def finish_rating_thistype(self) -> float:
+        return self._finish_rating_thistype
+
+    @finish_rating_thistype.setter
+    def finish_rating_thistype(self, input: float) -> None:
+        if not isinstance(input, float):
+            emessage = f"input should be a float, found type {type(input)}"
+            raise Exception(emessage)
+        self._finish_rating_thistype = input
+
+    @property
+    def finish_rating_all(self) -> float:
+        return self._finish_rating_all
+
+    @finish_rating_all.setter
+    def finish_rating_all(self, input: float) -> None:
+        if not isinstance(input, float):
+            emessage = f"input should be a float, found type {type(input)}"
+            raise Exception(emessage)
+        self._finish_rating_all = input
+    @property
+    def finish_pos(self) -> int:
+        return self._finish_pos
+
+    @finish_pos.setter
+    def finish_pos(self, input:int) -> None:
+        if not isinstance(input,int):
+            emessage = f"input should be a int, found type {type(input)}"
+            raise Exception(emessage)
+        self._finish_pos = input
+
+    @property
+    def event_points(self) -> int:
+        return self._event_points
+
+    @event_points.setter
+    def event_points(self, input:int) -> None:
+        if not isinstance(input,int):
+            emessage = f"input should be a int, found type {type(input)}"
+            raise Exception(emessage)
+        self._event_points = input
+
+    @property
+    def gp_earned(self) -> int:
+        return self._gp_earned
+
+    @gp_earned.setter
+    def gp_earned(self, input:int) -> None:
+        if not isinstance(input,int):
+            emessage = f"input should be a int, found type {type(input)}"
+            raise Exception(emessage)
+        self._gp_earned = input
 
     def toJSON(self) -> str:
         output = '{\n'

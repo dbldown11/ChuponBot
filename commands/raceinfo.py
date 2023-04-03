@@ -34,6 +34,7 @@ async def raceinfo(interaction, races):
     if emessage != "":
         raise Exception(emessage)
 
+    '''
     msg = ''
     cat = get(guild.categories, name="Racing")
     if interaction.channel.category == cat:
@@ -42,6 +43,16 @@ async def raceinfo(interaction, races):
             race = races[race_channel.name]
             msg += str(race)
             await interaction.response.send_message(msg, ephemeral=True)
-
+    '''
+    msg = ''
+    if interaction.channel.name in races.keys():
+        race = races[interaction.channel.name]
+        msg += str(race)
+        embed = discord.Embed(
+            title=f'Race data for **{race.channel_name}**',
+            colour=discord.Colour.dark_gray(),
+            description=msg)
+        #await interaction.response.send_message(msg, ephemeral=True,suppress_embeds=True)
+        await interaction.response.send_message(content=None, embed=embed, ephemeral=True)
     else:
         await interaction.response.send_message("This is not a race room!", ephemeral=True)

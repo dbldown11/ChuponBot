@@ -1,15 +1,19 @@
 import datetime
 #from commands.finishrace import finishrace
 import discord
+import os
+import asqlite
 import random
 import string
-from functions.constants import TZ, RACETYPE_ASYNC
+from functions.constants import TZ, RACETYPE_ASYNC, DATA_PATH
 
 from better_profanity import profanity
 from discord.utils import get
 from functions.add_racerooms import add_racerooms
 from functions.string_functions import parse_roomname, parse_done_time, timedelta_to_str
 from functions.isRace_room import isRace_room
+from functions.update_raceroom_pin import update_raceroom_pin
+from functions.update_spoiler_room_pin import update_spoiler_room_pin
 
 
 async def quitrace(interaction, races) -> dict:
@@ -59,11 +63,20 @@ async def quitrace(interaction, races) -> dict:
 
     racer = race.members[interaction.user.name]
     if racer.start_date:
-        msg = f"User {interaction.user.name}, you have already started the race, you must /forfeit instead."
+        msg = f"User {interaction.user.name}, you have already started the race, you must `/forfeit` instead."
         await interaction.response.send_message(msg, ephemeral=True)
         return
 
     race.removeRacer(racer)
+    # Remove the racer from the db
+    path = os.path.join(DATA_PATH, 'testdata.db')
+    data = (channel.name, interaction.user.id)
+    async with asqlite.connect(path) as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute("""DELETE FROM race_members WHERE race_name = ? AND user_id = ?""", data)
+            await conn.commit()
 
     msg = f"User {interaction.user.name} has exited the race."
+    await update_raceroom_pin(race.channel_name,races)
+    await update_spoiler_room_pin(race.channel_name,races)
     await interaction.response.send_message(msg)
