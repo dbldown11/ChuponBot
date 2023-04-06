@@ -48,6 +48,7 @@ class Race:
         self._race_listing_msg_id = None #NOTE: this is not being written to json rn!
         self._event_name = None #NOTE: this is not being written to json rn!
         self._gp_pool = None
+        self._restrict_role_id = None
 
         if initialize:
             if not isinstance(in_interaction, discord.Interaction):
@@ -458,6 +459,19 @@ class Race:
             emessage = f"input should be int. Found type {type(input)}"
             raise Exception(emessage)
         self._gp_pool = input
+
+    ### DT, 4/6/23
+    @property
+    def restrict_role_id(self) -> int:
+        return self._restrict_role_id
+
+    @restrict_role_id.setter
+    def restrict_role_id(self, input) -> None:
+        if not isinstance(input, int) and input != None:
+            emessage = f"input should be int. Found type {type(input)}"
+            raise Exception(emessage)
+        self._restrict_role_id = input
+    ###
 
     def close(self) -> None:
         """Closes the race"""
