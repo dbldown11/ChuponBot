@@ -133,6 +133,10 @@ def loadraces(path: str, client: discord.client.Client) -> dict:
         else:
             r.description = 'No details available - join the race room or contact the race creator to learn more!'
 
+        ### DT 4/6/23
+        if row["restrict_role_id"]:
+            r.restrict_role_id = row["restrict_role_id"]
+
         # TODO: make another search to get all race runners
         # Need to write out racerunners as a dict
         path = os.path.join(DATA_PATH, 'testdata.db')

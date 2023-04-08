@@ -214,10 +214,16 @@ async def openrace(interaction, races, args) -> dict:
         race.scheduled_close = scheduled_enddate
     race.admins.add(interaction.user.id)
 
+    ### Add restriction info to the race ### DT, 4/6/23
+    # Assuming args['restrict'] is a single role name:
+    if args['restrict'] is not None:
+        race.restrict_role_id = discord.utils.get(interaction.guild.roles, name=args['restrict'])
+    ###
+
     # Write the race to the db - set the path and assemble the original data
     path = os.path.join(functions.constants.DATA_PATH, 'testdata.db')
     data = (race.channel.name, race.guild.id, race.entrants_msg_id, race.entrants_spoiler_msg_id, race.creator.id,
-            race.description, race.isHidden, race.type, race.opened_date, race.event_name)
+            race.description, race.isHidden, race.type, race.opened_date, race.event_name, race.restrict_role_id)
 
     # build a list of tuples containing the admins for this race
     admins_data = []
@@ -230,8 +236,8 @@ async def openrace(interaction, races, args) -> dict:
     async with asqlite.connect(path) as conn:
         async with conn.cursor() as cursor:
             await cursor.execute("""INSERT INTO races (race_name, guild, entrants_msg_id, entrants_spoiler_msg_id,
-                creator_id, description, ishidden, type, date_opened, event_name) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", data)
+                creator_id, description, ishidden, type, date_opened, event_name, restrict_role_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", data)
             await cursor.executemany("""INSERT INTO race_admins(user_id, race_name) VALUES(?,?);""",admins_data)
             await conn.commit()
 

@@ -61,6 +61,16 @@ async def joinrace(guild, interaction, room, races):
         await interaction.response.send_message(emessage, ephemeral=True)
         return
 
+    ### Add a check for race restriction ### DT 4/6/23
+    if race.restrict_role_id is not None:
+        # Get guild members with this role
+        role = discord.guild.get(interaction.guild.roles, id=race.restrict_role_id)
+        if interaction.user not in role.members:
+            emessage = "You are not eligible to join this race!"
+            await interaction.response.send_message(emessage, ephemeral=True)
+            return
+    ###
+
     # check if player is registered in the guild's playerbase
     await db_player_check_init(interaction.user) #this might fail due to users not having guilds, we'll see
 
