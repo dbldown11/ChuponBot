@@ -46,7 +46,8 @@ async def db_init():
                 scheduled_close TEXT, 
                 comments TEXT, 
                 event_name TEXT,
-                gp_pool INTEGER
+                gp_pool INTEGER,
+                restrict_role_id INTEGER
                 );""")
 
             # create race_admins table
@@ -153,14 +154,14 @@ async def db_update_race(race) -> None:
     data = (race.guild.id, race.entrants_msg_id, race.entrants_spoiler_msg_id, race.creator.id,
             race.description, race.stream_url, race.filename, race.preset, race.url, race.isHidden, race.hash,
             race.version, race.flags, race.type, race.opened_date, race.race_start_date, race.closed_date,
-            race.scheduled_close, race.comments, race.event_name, race.channel.name)
+            race.scheduled_close, race.comments, race.event_name, race.restrict_role_id, race.channel.name)
     async with asqlite.connect(path) as conn:
         async with conn.cursor() as cursor:
             await cursor.execute("""UPDATE races
                 SET guild=?, entrants_msg_id=?, entrants_spoiler_msg_id=?, creator_id=?, description=?, 
                 stream_url=?, filename=?, preset=?, url=?, ishidden=?, hash=?, version=?, flags=?, type=?, 
-                date_opened=?, date_started=?, date_closed=?, scheduled_close=?, comments=?, event_name=?
-                WHERE race_name=?
+                date_opened=?, date_started=?, date_closed=?, scheduled_close=?, comments=?, event_name=?, 
+                restrict_role_id=? WHERE race_name=?
                 """, data)
             await conn.commit()
 
